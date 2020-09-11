@@ -25,6 +25,8 @@ Options:
   -r=true: Wait for the publisher confirmation before exiting
   -t="direct": Exchange type - direct|fanout|topic|x-custom
   -u="amqp://guest:guest@localhost:5672/": AMQP URI
+  -rt="reply": reply routing key
+  -d=true: Durable queue
   ```
 
 ## Installation
