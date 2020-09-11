@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/streadway/amqp"
 	"log"
+
+	"github.com/streadway/amqp"
 )
 
 type Consumer struct {
@@ -13,7 +14,7 @@ type Consumer struct {
 	done       chan error
 }
 
-func NewConsumer(amqpURI, exchange, exchangeType, queue, key, ctag string) (*Consumer, error) {
+func NewConsumer(amqpURI, exchange, exchangeType, queue, key, ctag string, durable bool) (*Consumer, error) {
 	c := &Consumer{
 		connection: nil,
 		channel:    nil,
@@ -39,7 +40,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queue, key, ctag string) (*Con
 	if err = c.channel.ExchangeDeclare(
 		exchange,     // name of the exchange
 		exchangeType, // type
-		true,         // durable
+		durable,      // durable
 		false,        // delete when complete
 		false,        // internal
 		false,        // noWait

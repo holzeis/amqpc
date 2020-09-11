@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/streadway/amqp"
 	"log"
+
+	"github.com/streadway/amqp"
 )
 
 type Producer struct {
@@ -13,7 +14,7 @@ type Producer struct {
 	done       chan error
 }
 
-func NewProducer(amqpURI, exchange, exchangeType, key, ctag string, reliable bool) (*Producer, error) {
+func NewProducer(amqpURI, exchange, exchangeType, key, ctag string, reliable bool, durable bool) (*Producer, error) {
 	p := &Producer{
 		connection: nil,
 		channel:    nil,
@@ -39,7 +40,7 @@ func NewProducer(amqpURI, exchange, exchangeType, key, ctag string, reliable boo
 	if err := p.channel.ExchangeDeclare(
 		exchange,     // name
 		exchangeType, // type
-		true,         // durable
+		durable,      // durable
 		false,        // auto-deleted
 		false,        // internal
 		false,        // noWait
@@ -63,7 +64,7 @@ func NewProducer(amqpURI, exchange, exchangeType, key, ctag string, reliable boo
 	return p, nil
 }
 
-func (p *Producer) Publish(exchange, routingKey, body string) error {
+func (p *Producer) Publish(replyTo, exchange, routingKey, body string) error {
 	log.Printf("Publishing %s (%dB)", body, len(body))
 
 	if err := p.channel.Publish(
@@ -73,11 +74,12 @@ func (p *Producer) Publish(exchange, routingKey, body string) error {
 		false,      // immediate
 		amqp.Publishing{
 			Headers:         amqp.Table{},
-			ContentType:     "text/plain",
-			ContentEncoding: "",
+			ContentType:     "application/json",
+			ContentEncoding: "utf-8",
 			Body:            []byte(body),
 			DeliveryMode:    amqp.Transient, // 1=non-persistent, 2=persistent
 			Priority:        0,              // 0-9
+			ReplyTo:         replyTo,
 			// a bunch of application/implementation-specific fields
 		},
 	); err != nil {

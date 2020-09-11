@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/sha1"
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -20,6 +18,8 @@ const (
 	DEFAULT_INTERVAL      int    = 500
 	DEFAULT_MESSAGE_COUNT int    = 0
 	DEFAULT_CONCURRENCY   int    = 1
+	DEFAULT_DURABLE       bool   = true
+	DEFAULT_REPLYTO       string = "reply"
 )
 
 var (
@@ -39,6 +39,8 @@ var (
 	exchangeType = flag.String("t", DEFAULT_EXCHANGE_TYPE, "Exchange type - direct|fanout|topic|x-custom")
 	consumerTag  = flag.String("ct", DEFAULT_CONSUMER_TAG, "AMQP consumer tag (should not be blank)")
 	reliable     = flag.Bool("r", DEFAULT_RELIABLE, "Wait for the publisher confirmation before exiting")
+	durable      = flag.Bool("d", DEFAULT_DURABLE, "AMQP should be durable")
+	replyTo      = flag.String("rt", DEFAULT_REPLYTO, "reply to")
 
 	// Test bench related
 	concurrency  = flag.Int("g", DEFAULT_CONCURRENCY, "Concurrency")
@@ -103,6 +105,7 @@ func startConsumer(done chan error) {
 		*queue,
 		*routingKey,
 		*consumerTag,
+		*durable,
 	)
 
 	if err != nil {
@@ -120,6 +123,7 @@ func startProducer(done chan error, body *string, messageCount, interval int) {
 		*routingKey,
 		*consumerTag,
 		true,
+		*durable,
 	)
 
 	if err != nil {
@@ -142,13 +146,5 @@ func startProducer(done chan error, body *string, messageCount, interval int) {
 }
 
 func publish(p *Producer, body *string, i int) {
-	// Generate SHA for body
-	hasher := sha1.New()
-	hasher.Write([]byte(*body + string(i)))
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-
-	// String to publish
-	bodyString := fmt.Sprintf("body: %s - hash: %s", *body, sha)
-
-	p.Publish(*exchange, *routingKey, bodyString)
+	p.Publish(*replyTo, *exchange, *routingKey, *body)
 }
